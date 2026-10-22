@@ -83,7 +83,8 @@ class SettingsRepository private constructor(private val context: Context) {
 
     // ---- Token -----------------------------------------------------------------------------
 
-    fun token(): String? = secrets.getString(KEY_TOKEN, null)?.takeIf { it.isNotBlank() }
+    /** Null if not set, or if the encrypted store can't be opened (e.g. Keystore reset). */
+    fun token(): String? = runCatching { secrets.getString(KEY_TOKEN, null) }.getOrNull()?.takeIf { it.isNotBlank() }
 
     fun setToken(token: String?) {
         secrets.edit { if (token.isNullOrBlank()) remove(KEY_TOKEN) else putString(KEY_TOKEN, token.trim()) }
