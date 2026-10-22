@@ -5,6 +5,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -20,6 +23,23 @@ jobs:
 
       - name: Unit tests (timing, wording, dedupe) and debug APK
         run: ./gradlew --no-daemon :core:test :app:assembleDebug
+
+      - name: Rename APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk UtebuildTexter.apk
+
+      # A release gives a plain download link that works from the phone's browser (no zip).
+      - name: Publish APK as a release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="apk-${GITHUB_REF_NAME//\//-}"
+          gh release delete "$TAG" --cleanup-tag --yes 2>/dev/null || true
+          gh release create "$TAG" UtebuildTexter.apk \
+            --target "$GITHUB_SHA" \
+            --title "Utebuild Texter APK (${GITHUB_REF_NAME}, ${GITHUB_SHA::7})" \
+            --notes "Debug-signed APK built from ${GITHUB_SHA}. Tap UtebuildTexter.apk below to download and install." \
+            --prerelease
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
