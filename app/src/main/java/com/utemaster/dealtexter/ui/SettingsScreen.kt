@@ -55,7 +55,7 @@ fun SettingsScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
 
     fun save(): Boolean {
-        val errors = form.validate().toMutableList()
+        val errors = mutableListOf<String>()
         if (form.myNumber.isNotBlank() && PhoneNumbers.normalise(form.myNumber) == null) {
             errors += "Your mobile number doesn't look valid"
         }
@@ -145,10 +145,12 @@ fun SettingsScreen(onBack: () -> Unit) {
                 preview?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
             }
 
-            Section("Work hours (weekdays, Sydney time)") {
-                Text("Deals created between these times on a weekday don't get a text.", style = MaterialTheme.typography.bodySmall)
-                Field("Start", form.workStart) { form = form.copy(workStart = it) }
-                Field("End", form.workEnd) { form = form.copy(workEnd = it) }
+            Section("Start time") {
+                Text(
+                    "Texts go out for deals created before 7am or from 3pm on weekdays, and any time on weekends " +
+                        "and NSW public holidays (Sydney time).",
+                    style = MaterialTheme.typography.bodySmall,
+                )
                 Text(
                     state.activatedAt?.let { "Deals created before ${formatSydney(it)} are ignored." } ?: "Not switched on yet.",
                     style = MaterialTheme.typography.bodySmall,

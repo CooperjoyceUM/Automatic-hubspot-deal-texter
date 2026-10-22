@@ -8,7 +8,6 @@ import org.junit.Test
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDateTime
-import java.time.LocalTime
 import java.time.ZoneOffset
 
 class DealProcessorTest {
@@ -80,8 +79,6 @@ class DealProcessorTest {
         testMode = testMode,
         notesInTestMode = false,
         messageTemplate = MessageTemplate.DEFAULT_TEMPLATE,
-        workStart = LocalTime.of(7, 0),
-        workEnd = LocalTime.of(15, 0),
         activatedAt = syd("2026-10-01T00:00"),
     )
 

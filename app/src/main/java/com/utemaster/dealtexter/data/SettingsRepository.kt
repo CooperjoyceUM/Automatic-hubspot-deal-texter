@@ -10,8 +10,6 @@ import com.utemaster.dealtexter.core.TexterConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.time.Instant
-import java.time.LocalTime
-import java.time.format.DateTimeParseException
 
 /** Everything editable on the Settings screen. All IDs are editable – these are only the starting values. */
 data class AppSettings(
@@ -24,26 +22,7 @@ data class AppSettings(
     val testMode: Boolean = true,
     val notesInTestMode: Boolean = false,
     val messageTemplate: String = MessageTemplate.DEFAULT_TEMPLATE,
-    /** Weekday work hours: deals created between these times get no text. */
-    val workStart: String = "07:00",
-    val workEnd: String = "15:00",
-) {
-    /** Returns a list of problems with the values, empty if they can be saved. */
-    fun validate(): List<String> {
-        val errors = mutableListOf<String>()
-        if (parseTime(workStart) == null) errors += "Work hours start must be HH:mm, e.g. 07:00"
-        if (parseTime(workEnd) == null) errors += "Work hours end must be HH:mm, e.g. 15:00"
-        return errors
-    }
-
-    companion object {
-        fun parseTime(s: String): LocalTime? = try {
-            LocalTime.parse(s.trim())
-        } catch (e: DateTimeParseException) {
-            null
-        }
-    }
-}
+)
 
 class SettingsRepository private constructor(private val context: Context) {
 
@@ -98,8 +77,6 @@ class SettingsRepository private constructor(private val context: Context) {
             putBoolean("testMode", s.testMode)
             putBoolean("notesInTestMode", s.notesInTestMode)
             putString("messageTemplate", s.messageTemplate)
-            putString("workStart", s.workStart.trim())
-            putString("workEnd", s.workEnd.trim())
         }
         _settings.value = load()
     }
@@ -116,8 +93,6 @@ class SettingsRepository private constructor(private val context: Context) {
             testMode = prefs.getBoolean("testMode", d.testMode),
             notesInTestMode = prefs.getBoolean("notesInTestMode", d.notesInTestMode),
             messageTemplate = prefs.getString("messageTemplate", d.messageTemplate)!!,
-            workStart = prefs.getString("workStart", d.workStart)!!,
-            workEnd = prefs.getString("workEnd", d.workEnd)!!,
         )
     }
 
@@ -170,8 +145,6 @@ class SettingsRepository private constructor(private val context: Context) {
             testMode = s.testMode,
             notesInTestMode = s.notesInTestMode,
             messageTemplate = s.messageTemplate,
-            workStart = AppSettings.parseTime(s.workStart) ?: LocalTime.of(7, 0),
-            workEnd = AppSettings.parseTime(s.workEnd) ?: LocalTime.of(15, 0),
             activatedAt = activatedAt,
         )
     }

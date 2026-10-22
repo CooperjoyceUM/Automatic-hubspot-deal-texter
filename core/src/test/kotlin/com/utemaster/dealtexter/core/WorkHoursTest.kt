@@ -5,7 +5,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
 import java.time.LocalDateTime
-import java.time.LocalTime
 
 class WorkHoursTest {
 
@@ -39,8 +38,16 @@ class WorkHoursTest {
         assertFalse(texts(syd("2026-10-26T07:00")))
     }
 
-    @Test fun `work hours are configurable`() {
-        assertTrue(WorkHours.shouldText(syd("2026-10-26T07:30"), start = LocalTime.of(8, 0)))
+    @Test fun `weekday public holidays get a text any time`() {
+        for (t in listOf("02:00", "09:00", "12:00", "14:59", "18:00")) {
+            assertTrue("Labour Day $t", texts(syd("2026-10-05T$t")))
+            assertTrue("Good Friday $t", texts(syd("2027-03-26T$t")))
+            assertTrue("Boxing Day substitute $t", texts(syd("2026-12-28T$t")))
+        }
+    }
+
+    @Test fun `day after a public holiday is a normal workday`() {
+        assertFalse(texts(syd("2026-10-06T10:00")))
     }
 
     // ---- Daylight saving changeover --------------------------------------------------------

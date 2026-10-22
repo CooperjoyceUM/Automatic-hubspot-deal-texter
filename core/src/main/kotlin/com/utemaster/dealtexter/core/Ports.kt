@@ -1,7 +1,6 @@
 package com.utemaster.dealtexter.core
 
 import java.time.Instant
-import java.time.LocalTime
 
 /** Everything the workflow needs from Settings, already validated and parsed. */
 data class TexterConfig(
@@ -16,9 +15,6 @@ data class TexterConfig(
     /** Also write HubSpot notes for test-mode sends (off by default so customer deals aren't cluttered). */
     val notesInTestMode: Boolean,
     val messageTemplate: String,
-    /** Weekday work hours (Sydney time): deals created inside them get no text. */
-    val workStart: LocalTime,
-    val workEnd: LocalTime,
     /** Moment the app was first switched on. Deals created before this are never texted. */
     val activatedAt: Instant,
 )

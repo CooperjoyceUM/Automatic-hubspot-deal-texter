@@ -17,9 +17,14 @@ The app is sideloaded as a debug-signed APK. It is not on the Play Store.
 
 All of these IDs can be changed in Settings.
 
-**When it texts.** Every qualifying deal gets a text straight away, **except** deals created on a
-weekday between 7:00am and 3:00pm Sydney time. You'd normally just call those. Evenings, overnight and
-weekends all get a text. Daylight saving is handled. The work hours can be changed in Settings.
+**When it texts.** Based on the deal's `createdate` in Sydney time. Daylight saving is handled.
+
+| Deal created | Text? |
+|---|---|
+| Weekday before 7:00am | Yes, straight away |
+| Weekday from 3:00pm | Yes, straight away |
+| Weekday 7:00am to 3:00pm | No (you'd just call them) |
+| Saturday, Sunday or NSW public holiday | Yes, any time |
 
 **The message** is one fixed text, editable in Settings. It can use `{first_name}` and `{my_name}`. The
 current placeholder wording is:
@@ -146,11 +151,18 @@ When the test texts look right, turn **Test mode** off and tap **Save**. The ban
 
 Deals already handled in test mode are not texted again.
 
+## Updating NSW public holidays
+
+The list covers 2026–2028 and is in `core/src/main/kotlin/com/utemaster/dealtexter/core/WorkHours.kt`
+(`NSW_PUBLIC_HOLIDAYS`). Once a year, add the next year's weekday holidays from
+<https://www.nsw.gov.au/about-nsw/public-holidays> and rebuild. If a holiday is missing, the only
+effect is that a deal created on it during 7am–3pm gets no text.
+
 ## Project layout
 
 ```
 core/   Plain Kotlin, no Android, unit tested
-        WorkHours        weekday 7am-3pm Sydney time = no text
+        WorkHours        weekday 7am-3pm Sydney time = no text; NSW holiday list
         PhoneNumbers     Australian numbers → +61
         MessageTemplate  message template and the HubSpot note format
         DealProcessor    the check → dedupe → send → note workflow, plus retries
@@ -167,6 +179,7 @@ The unit tests are in `core/src/test`. They cover:
 - Saturday and Sunday
 - 2am Monday
 - the 7am and 3pm boundaries
+- public holidays
 - days when daylight saving starts and ends, plus the weekdays either side
 - phone number normalisation
 - the message template

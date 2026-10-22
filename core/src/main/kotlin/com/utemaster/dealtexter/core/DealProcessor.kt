@@ -90,7 +90,7 @@ class DealProcessor(
         }
         val attempts = existing?.attempts ?: 0
 
-        if (!WorkHours.shouldText(deal.createdAt, config.workStart, config.workEnd)) {
+        if (!WorkHours.shouldText(deal.createdAt)) {
             store.put(record(deal, Status.NO_TEXT_NEEDED, attempts))
             return Outcome.SKIPPED
         }
