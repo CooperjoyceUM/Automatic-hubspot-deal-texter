@@ -6,7 +6,6 @@ import androidx.core.content.edit
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.utemaster.dealtexter.core.MessageTemplate
-import com.utemaster.dealtexter.core.NswHolidays
 import com.utemaster.dealtexter.core.TexterConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,20 +24,15 @@ data class AppSettings(
     val testMode: Boolean = true,
     val notesInTestMode: Boolean = false,
     val messageTemplate: String = MessageTemplate.DEFAULT_TEMPLATE,
-    val questions: String = MessageTemplate.DEFAULT_QUESTIONS,
-    /** Null means "use the built-in list" so app updates bring new years automatically. */
-    val holidaysText: String? = null,
-    val morningEnd: String = "07:00",
-    val afternoonStart: String = "15:00",
+    /** Weekday work hours: deals created between these times get no text. */
+    val workStart: String = "07:00",
+    val workEnd: String = "15:00",
 ) {
-    val effectiveHolidaysText: String get() = holidaysText ?: NswHolidays.DEFAULT_LIST
-
     /** Returns a list of problems with the values, empty if they can be saved. */
     fun validate(): List<String> {
         val errors = mutableListOf<String>()
-        if (parseTime(morningEnd) == null) errors += "Morning cut-off must be HH:mm, e.g. 07:00"
-        if (parseTime(afternoonStart) == null) errors += "Afternoon start must be HH:mm, e.g. 15:00"
-        errors += NswHolidays.parse(effectiveHolidaysText).errors
+        if (parseTime(workStart) == null) errors += "Work hours start must be HH:mm, e.g. 07:00"
+        if (parseTime(workEnd) == null) errors += "Work hours end must be HH:mm, e.g. 15:00"
         return errors
     }
 
@@ -104,11 +98,8 @@ class SettingsRepository private constructor(private val context: Context) {
             putBoolean("testMode", s.testMode)
             putBoolean("notesInTestMode", s.notesInTestMode)
             putString("messageTemplate", s.messageTemplate)
-            putString("questions", s.questions)
-            val holidays = s.holidaysText?.takeIf { it.trim() != NswHolidays.DEFAULT_LIST.trim() }
-            if (holidays == null) remove("holidaysText") else putString("holidaysText", holidays)
-            putString("morningEnd", s.morningEnd.trim())
-            putString("afternoonStart", s.afternoonStart.trim())
+            putString("workStart", s.workStart.trim())
+            putString("workEnd", s.workEnd.trim())
         }
         _settings.value = load()
     }
@@ -125,10 +116,8 @@ class SettingsRepository private constructor(private val context: Context) {
             testMode = prefs.getBoolean("testMode", d.testMode),
             notesInTestMode = prefs.getBoolean("notesInTestMode", d.notesInTestMode),
             messageTemplate = prefs.getString("messageTemplate", d.messageTemplate)!!,
-            questions = prefs.getString("questions", d.questions)!!,
-            holidaysText = prefs.getString("holidaysText", null),
-            morningEnd = prefs.getString("morningEnd", d.morningEnd)!!,
-            afternoonStart = prefs.getString("afternoonStart", d.afternoonStart)!!,
+            workStart = prefs.getString("workStart", d.workStart)!!,
+            workEnd = prefs.getString("workEnd", d.workEnd)!!,
         )
     }
 
@@ -181,10 +170,8 @@ class SettingsRepository private constructor(private val context: Context) {
             testMode = s.testMode,
             notesInTestMode = s.notesInTestMode,
             messageTemplate = s.messageTemplate,
-            questions = s.questions,
-            holidays = NswHolidays.parse(s.effectiveHolidaysText).calendar,
-            morningEnd = AppSettings.parseTime(s.morningEnd) ?: LocalTime.of(7, 0),
-            afternoonStart = AppSettings.parseTime(s.afternoonStart) ?: LocalTime.of(15, 0),
+            workStart = AppSettings.parseTime(s.workStart) ?: LocalTime.of(7, 0),
+            workEnd = AppSettings.parseTime(s.workEnd) ?: LocalTime.of(15, 0),
             activatedAt = activatedAt,
         )
     }

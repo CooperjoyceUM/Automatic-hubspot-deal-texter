@@ -49,9 +49,9 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.utemaster.dealtexter.Graph
-import com.utemaster.dealtexter.core.CallTiming
 import com.utemaster.dealtexter.core.PhoneNumbers
 import com.utemaster.dealtexter.core.Status
+import com.utemaster.dealtexter.core.WorkHours
 import com.utemaster.dealtexter.data.TextRecordEntity
 import com.utemaster.dealtexter.work.CheckScheduler
 import kotlinx.coroutines.launch
@@ -61,7 +61,7 @@ import java.util.Locale
 
 private val TIME_FORMAT = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a", Locale.ENGLISH)
 
-fun formatSydney(i: Instant): String = TIME_FORMAT.format(CallTiming.sydneyTime(i))
+fun formatSydney(i: Instant): String = TIME_FORMAT.format(WorkHours.sydneyTime(i))
 
 @Composable
 fun HomeScreen(onOpenSettings: () -> Unit) {
@@ -262,9 +262,8 @@ private fun statusLabel(s: Status?, r: TextRecordEntity) = when (s) {
     Status.SENDING -> "Unconfirmed – check your Messages app"
     Status.FAILED -> "Failed (attempt ${r.attempts}) – will retry"
     Status.GAVE_UP -> "Gave up after ${r.attempts} attempts"
-    Status.NO_TEXT_NEEDED -> "No text needed (weekday business hours)"
+    Status.NO_TEXT_NEEDED -> "No text – came in during work hours"
     Status.ALREADY_NOTED -> "Skipped – HubSpot already has a text-sent note"
-    Status.TOO_LATE -> "Not sent – call day already passed"
     null -> r.status
 }
 

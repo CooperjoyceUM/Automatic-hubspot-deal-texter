@@ -17,22 +17,15 @@ The app is sideloaded as a debug-signed APK. It is not on the Play Store.
 
 All of these IDs can be changed in Settings.
 
-**When it texts.** Based on the deal's `createdate` in Sydney time. Daylight saving is handled.
+**When it texts.** Every qualifying deal gets a text straight away, **except** deals created on a
+weekday between 7:00am and 3:00pm Sydney time. You'd normally just call those. Evenings, overnight and
+weekends all get a text. Daylight saving is handled. The work hours can be changed in Settings.
 
-| Deal created | Text says |
-|---|---|
-| Weekday, 3:00pm to midnight | "I'll call you **tomorrow**", or "**on Tuesday**" if tomorrow is a weekend or holiday |
-| Weekday, midnight to 7:00am | "I'll call you **this morning**" |
-| Saturday or Sunday, any time | "I'll call you **on Monday**", or a later day if Monday is a public holiday |
-| NSW public holiday, any time | Same as a weekend: the next working day |
-| Weekday, 7:00am to 3:00pm | No text |
+**The message** is one fixed text, editable in Settings. It can use `{first_name}` and `{my_name}`. The
+current placeholder wording is:
 
-Texts go out as soon as the app finds the deal, even overnight.
-
-The call **day** comes from `createdate`. The **wording** is worked out at the moment the text is sent.
-For example, a deal created at 11:58pm and texted at 12:10am says "this morning", not "tomorrow".
-If the promised day has already passed (say the phone was off all weekend), the app doesn't send the text.
-It notifies me to call them myself instead.
+> Hey {first_name}, I noticed you were on our website. I'll give you a call next time I'm in the office
+> to provide a consultation. - {my_name}, Utemaster
 
 **Avoiding duplicate texts:**
 1. A local Room database records every deal it has handled. A deal marked `SENT` is never texted again.
@@ -53,12 +46,11 @@ save, it's retried on the next check, and the text is not resent.
 - HubSpot returns an error.
 
 It retries on each check. SMS and HubSpot failures stop after 6 attempts (about 1.5 hours). A missing
-mobile number keeps being retried, so the text goes out once the number is added, up until the promised
-call day passes. Repeat notifications for the same problem are held back for 6 hours.
+mobile number keeps being retried while the deal is in Discovery, so the text goes out once the number
+is added. Repeat notifications for the same problem are held back for 6 hours.
 
 **Test mode** is on by default. While it's on, every text goes to **my own number**, a yellow banner
-says so, and no HubSpot notes are written. You can turn notes on for testing in Settings. Live mode stays
-blocked until the qualifying-questions placeholder has been replaced.
+says so, and no HubSpot notes are written. You can turn notes on for testing in Settings.
 
 ## Getting the APK
 
@@ -141,36 +133,24 @@ names the scope to add.
    `1101472483`, and link property `utebuilder_submission_link`. All of them can be edited.
 3. Enter **your own mobile number**. In test mode, every text goes there.
 4. Tap **Save & test HubSpot connection**. It should show your name and a deal count.
-5. Edit the **message template** and the **qualifying questions**. Tap **Preview message** to see the
-   result and how many SMS parts it uses.
+5. Edit the **message**. Tap **Preview message** to see the result and how many SMS parts it uses.
+   Plain characters keep it cheaper: curly quotes, en dashes or emoji switch the SMS to an encoding that
+   allows only 70 characters per part.
 6. Back on the home screen, switch **Automatic checking** on. The moment you do this is recorded, and only
    deals created after it will ever be texted. Use **Run check now** to run a check straight away.
 
 ### 3. Go live
 
-When the test texts look right:
-1. Replace the placeholder qualifying questions.
-2. Turn **Test mode** off and tap **Save**. The banner turns red and says **LIVE**.
+When the test texts look right, turn **Test mode** off and tap **Save**. The banner turns red and says
+**LIVE**.
 
 Deals already handled in test mode are not texted again.
-
-## Updating NSW public holidays each year
-
-Go to Settings → **NSW public holidays**. There's one date per line, in the format `YYYY-MM-DD Name`.
-Add next year's dates from <https://www.nsw.gov.au/about-nsw/public-holidays> and tap **Save**. No
-rebuild is needed. The app sends a reminder notification if the list has nothing for the current year,
-or, in December, for the next year.
-
-The built-in list covers **2026–2028** and is in
-`core/src/main/kotlin/com/utemaster/dealtexter/core/NswHolidays.kt`. **Reset to built-in list** goes back
-to it. Bank Holiday in August isn't included because it isn't a state-wide public holiday.
 
 ## Project layout
 
 ```
 core/   Plain Kotlin, no Android, unit tested
-        CallTiming       which day to promise, and the wording
-        NswHolidays      holiday list, parser and working-day calendar
+        WorkHours        weekday 7am-3pm Sydney time = no text
         PhoneNumbers     Australian numbers → +61
         MessageTemplate  message template and the HubSpot note format
         DealProcessor    the check → dedupe → send → note workflow, plus retries
@@ -185,10 +165,9 @@ app/    Android
 The unit tests are in `core/src/test`. They cover:
 - Friday afternoon
 - Saturday and Sunday
-- 2am Monday, including when Monday is a holiday
-- the 3pm and 7am boundaries
-- Easter, Christmas and New Year holidays
+- 2am Monday
+- the 7am and 3pm boundaries
 - days when daylight saving starts and ends, plus the weekdays either side
 - phone number normalisation
-- templates
+- the message template
 - the dedupe, retry and failure paths

@@ -16,10 +16,9 @@ data class TexterConfig(
     /** Also write HubSpot notes for test-mode sends (off by default so customer deals aren't cluttered). */
     val notesInTestMode: Boolean,
     val messageTemplate: String,
-    val questions: String,
-    val holidays: HolidayCalendar,
-    val morningEnd: LocalTime,
-    val afternoonStart: LocalTime,
+    /** Weekday work hours (Sydney time): deals created inside them get no text. */
+    val workStart: LocalTime,
+    val workEnd: LocalTime,
     /** Moment the app was first switched on. Deals created before this are never texted. */
     val activatedAt: Instant,
 )
@@ -70,12 +69,10 @@ enum class Status {
     FAILED,
     /** Gave up after repeated failures; retry from the app. */
     GAVE_UP,
-    /** Created during weekday business hours: no text by design. */
+    /** Created during weekday work hours: no text by design. */
     NO_TEXT_NEEDED,
     /** HubSpot already has a "text sent" note (e.g. after reinstalling the app). */
     ALREADY_NOTED,
-    /** The promised call day had already passed before the text could go out. */
-    TOO_LATE,
 }
 
 data class TextRecord(

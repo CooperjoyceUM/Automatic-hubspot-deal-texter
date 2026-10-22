@@ -38,7 +38,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.utemaster.dealtexter.Graph
 import com.utemaster.dealtexter.core.MessageTemplate
-import com.utemaster.dealtexter.core.NswHolidays
 import com.utemaster.dealtexter.core.PhoneNumbers
 import com.utemaster.dealtexter.data.AppSettings
 import kotlinx.coroutines.launch
@@ -138,29 +137,18 @@ fun SettingsScreen(onBack: () -> Unit) {
             Section("Message") {
                 Field("My name (used in the text)", form.myName) { form = form.copy(myName = it) }
                 Field("Message template", form.messageTemplate, singleLine = false) { form = form.copy(messageTemplate = it) }
-                Text(
-                    "Placeholders: {first_name} {my_name} {when} {questions} {deal_name}\n" +
-                        "{when} becomes \"tomorrow\", \"this morning\", \"today\" or \"on Monday\".",
-                    style = MaterialTheme.typography.bodySmall,
-                )
-                Field("Qualifying questions", form.questions, singleLine = false) { form = form.copy(questions = it) }
-                if (MessageTemplate.hasPlaceholderQuestions(form.questions)) {
-                    Text(
-                        "These are still the placeholder. Live texting stays blocked until you replace them.",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
+                Text("Placeholders: {first_name} {my_name}", style = MaterialTheme.typography.bodySmall)
                 OutlinedButton(onClick = {
-                    val text = MessageTemplate.render(form.messageTemplate, "Sam", form.myName, "tomorrow", form.questions, "Sample deal")
+                    val text = MessageTemplate.render(form.messageTemplate, "Sam", form.myName)
                     preview = text + "\n\n(${text.length} characters, ${smsParts(context, text)} SMS part(s))"
                 }) { Text("Preview message") }
                 preview?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
             }
 
-            Section("Timing (Sydney time)") {
-                Field("Morning ends (\"this morning\" before this)", form.morningEnd) { form = form.copy(morningEnd = it) }
-                Field("Afternoon texts start (\"tomorrow\" from this)", form.afternoonStart) { form = form.copy(afternoonStart = it) }
+            Section("Work hours (weekdays, Sydney time)") {
+                Text("Deals created between these times on a weekday don't get a text.", style = MaterialTheme.typography.bodySmall)
+                Field("Start", form.workStart) { form = form.copy(workStart = it) }
+                Field("End", form.workEnd) { form = form.copy(workEnd = it) }
                 Text(
                     state.activatedAt?.let { "Deals created before ${formatSydney(it)} are ignored." } ?: "Not switched on yet.",
                     style = MaterialTheme.typography.bodySmall,
@@ -170,17 +158,6 @@ fun SettingsScreen(onBack: () -> Unit) {
                         Text("Reset start time to now")
                     }
                 }
-            }
-
-            Section("NSW public holidays") {
-                Text(
-                    "One per line: YYYY-MM-DD Name. Check nsw.gov.au each year and add the next year's dates.",
-                    style = MaterialTheme.typography.bodySmall,
-                )
-                Field("Holidays", form.effectiveHolidaysText, singleLine = false) { form = form.copy(holidaysText = it) }
-                OutlinedButton(onClick = { form = form.copy(holidaysText = null) }) { Text("Reset to built-in list") }
-                val errors = remember(form.effectiveHolidaysText) { NswHolidays.parse(form.effectiveHolidaysText).errors }
-                errors.forEach { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
             }
             Spacer(Modifier.padding(16.dp))
         }

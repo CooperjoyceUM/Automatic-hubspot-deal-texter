@@ -13,7 +13,7 @@ import java.time.ZoneOffset
 
 class DealProcessorTest {
 
-    private fun syd(s: String): Instant = LocalDateTime.parse(s).atZone(CallTiming.SYDNEY).toInstant()
+    private fun syd(s: String): Instant = LocalDateTime.parse(s).atZone(WorkHours.SYDNEY).toInstant()
 
     private class FakeCrm : CrmGateway {
         val deals = mutableListOf<Deal>()
@@ -80,10 +80,8 @@ class DealProcessorTest {
         testMode = testMode,
         notesInTestMode = false,
         messageTemplate = MessageTemplate.DEFAULT_TEMPLATE,
-        questions = "What vehicle?",
-        holidays = NswHolidays.default(),
-        morningEnd = LocalTime.of(7, 0),
-        afternoonStart = LocalTime.of(15, 0),
+        workStart = LocalTime.of(7, 0),
+        workEnd = LocalTime.of(15, 0),
         activatedAt = syd("2026-10-01T00:00"),
     )
 
@@ -99,7 +97,7 @@ class DealProcessorTest {
         val summary = p.runCheck(config())
         assertEquals(1, summary.sent)
         assertEquals("+61412345678", sms.sent.single().first)
-        assertTrue(sms.sent.single().second.contains("I'll call you on Monday"))
+        assertTrue(sms.sent.single().second.startsWith("Hey Sam,"))
         assertEquals(Status.SENT, store.records["1"]!!.status)
         assertFalse(store.records["1"]!!.notePending)
         assertTrue(SentNote.containsSentMarker(crm.notes["1"]!!.single()))
@@ -213,20 +211,6 @@ class DealProcessorTest {
         assertTrue(sms.sent.isEmpty())
         assertEquals(Status.SENDING, store.records["1"]!!.status)
         assertTrue(notifier.problems.single().contains("may or may not"))
-    }
-
-    @Test fun `too late to text is flagged`() = runTest {
-        addDeal("1", syd("2026-10-23T16:00")) // promises Monday 26th
-        processorAt(syd("2026-10-27T09:00")).runCheck(config())
-        assertTrue(sms.sent.isEmpty())
-        assertEquals(Status.TOO_LATE, store.records["1"]!!.status)
-    }
-
-    @Test fun `live mode is blocked while questions are still the placeholder`() = runTest {
-        addDeal("1", syd("2026-10-23T16:00"))
-        val s = processorAt(syd("2026-10-23T16:10")).runCheck(config().copy(questions = MessageTemplate.DEFAULT_QUESTIONS))
-        assertTrue(s.error!!.contains("placeholder"))
-        assertTrue(sms.sent.isEmpty())
     }
 
     @Test fun `unconfirmed send stays flagged and is never resent`() = runTest {

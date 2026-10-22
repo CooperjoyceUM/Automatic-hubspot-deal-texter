@@ -9,24 +9,13 @@ import java.time.Instant
 class MessageTemplateTest {
 
     @Test fun `default template identifies me and Utemaster`() {
-        val text = MessageTemplate.render(
-            MessageTemplate.DEFAULT_TEMPLATE, "Sam", "Cooper", "tomorrow", "Q1?\nQ2?", "Sam's Hilux",
-        )
-        assertEquals(
-            "Hi Sam, it's Cooper from Utemaster. Thanks for sending through your Utebuild! " +
-                "I'll call you tomorrow to go through it.\n\nQ1?\nQ2?",
-            text,
-        )
+        val text = MessageTemplate.render(MessageTemplate.DEFAULT_TEMPLATE, "Sam", "Cooper")
+        assertTrue(text.startsWith("Hey Sam,"))
+        assertTrue(text.endsWith("Cooper, Utemaster"))
     }
 
     @Test fun `missing first name falls back to there`() {
-        val text = MessageTemplate.render("Hi {first_name}, {when}", "  ", "Cooper", "on Monday", "", null)
-        assertEquals("Hi there, on Monday", text)
-    }
-
-    @Test fun `placeholder questions are detected`() {
-        assertTrue(MessageTemplate.hasPlaceholderQuestions(MessageTemplate.DEFAULT_QUESTIONS))
-        assertFalse(MessageTemplate.hasPlaceholderQuestions("What vehicle is it going on?"))
+        assertEquals("Hi there", MessageTemplate.render("Hi {first_name}", "  ", "Cooper"))
     }
 
     @Test fun `note contains marker, exact text and escapes html`() {

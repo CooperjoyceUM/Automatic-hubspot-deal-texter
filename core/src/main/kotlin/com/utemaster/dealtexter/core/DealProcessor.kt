@@ -85,30 +85,13 @@ class DealProcessor(
                 )
                 return Outcome.SKIPPED
             }
-            Status.GAVE_UP, Status.NO_TEXT_NEEDED, Status.ALREADY_NOTED, Status.TOO_LATE -> return Outcome.SKIPPED
+            Status.GAVE_UP, Status.NO_TEXT_NEEDED, Status.ALREADY_NOTED -> return Outcome.SKIPPED
             Status.FAILED, null -> Unit // (re)try below
         }
         val attempts = existing?.attempts ?: 0
 
-        // Timing: does this deal get a text at all, and which day do we promise?
-        val plan = CallTiming.plan(
-            deal.createdAt,
-            config.holidays,
-            CallTiming.TimingConfig(config.morningEnd, config.afternoonStart),
-        )
-        if (plan !is CallTiming.Plan.CallOn) {
+        if (!WorkHours.shouldText(deal.createdAt, config.workStart, config.workEnd)) {
             store.put(record(deal, Status.NO_TEXT_NEEDED, attempts))
-            return Outcome.SKIPPED
-        }
-        val now = clock.instant()
-        val whenPhrase = CallTiming.whenPhrase(plan.date, now)
-        if (whenPhrase == null) {
-            store.put(record(deal, Status.TOO_LATE, attempts, "Promised call day ${plan.date} has passed"))
-            notifier.problem(
-                "too-late-${deal.id}",
-                "Not texted: ${label(deal)}",
-                "The call day (${plan.date}) passed before the app could send the text. Please contact them manually.",
-            )
             return Outcome.SKIPPED
         }
 
@@ -125,14 +108,7 @@ class DealProcessor(
                     if (contacts.isEmpty()) " (no contact associated)" else "")
 
             val to = if (config.testMode) PhoneNumbers.normalise(config.myNumber)!! else customerNumber
-            val text = MessageTemplate.render(
-                config.messageTemplate,
-                contact.firstName,
-                config.myName,
-                whenPhrase,
-                config.questions,
-                deal.name,
-            )
+            val text = MessageTemplate.render(config.messageTemplate, contact.firstName, config.myName)
 
             store.put(record(deal, Status.SENDING, attempts + 1).copy(message = text, sentTo = to, testMode = config.testMode))
             when (val result = sms.send(to, text)) {
@@ -245,10 +221,7 @@ class DealProcessor(
             c.myName.isBlank() -> "Fill in your name in Settings."
             c.testMode && PhoneNumbers.normalise(c.myNumber) == null ->
                 "Test mode is on but your own mobile number isn't set (or isn't valid) in Settings."
-            !c.testMode && MessageTemplate.hasPlaceholderQuestions(c.questions) ->
-                "Test mode is off but the qualifying questions are still the placeholder. Edit them in Settings."
-            !c.messageTemplate.contains("{when}") ->
-                "The message template must contain {when} so the customer knows when you'll call."
+            c.messageTemplate.isBlank() -> "The message is empty. Write one in Settings."
             else -> null
         }
     }

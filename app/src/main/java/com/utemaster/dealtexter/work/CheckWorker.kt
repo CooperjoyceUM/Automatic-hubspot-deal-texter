@@ -11,10 +11,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
-import com.utemaster.dealtexter.AppNotifier
 import com.utemaster.dealtexter.Graph
-import com.utemaster.dealtexter.core.CallTiming
-import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 class CheckWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
@@ -29,17 +26,6 @@ class CheckWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
         if (config == null) {
             settings.recordRun("Not switched on yet – turn on automatic checking first")
             return Result.success()
-        }
-
-        // Remind me when the holiday list runs out.
-        val today = CallTiming.sydneyTime(Instant.now()).toLocalDate()
-        val yearsNeeded = if (today.monthValue == 12) listOf(today.year, today.year + 1) else listOf(today.year)
-        yearsNeeded.filterNot { config.holidays.hasDataFor(it) }.forEach { year ->
-            AppNotifier(app).problem(
-                "holidays-$year",
-                "Update the NSW holiday list",
-                "There are no NSW public holidays listed for $year. Add them in Settings → NSW public holidays.",
-            )
         }
 
         val summary = Graph.processor(app).runCheck(config)
